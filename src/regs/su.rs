@@ -1,18 +1,38 @@
-use std::fmt::{self, Write};
+use crate::{print::Print, utils};
 use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
-use crate::utils;
+use std::fmt::{self, Write};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u8)]
 pub(crate) enum GpReg {
     R0 = 0,
     AT,
-    V0, V1,
-    A0, A1, A2, A3,
-    T0, T1, T2, T3, T4, T5, T6, T7,
-    S0, S1, S2, S3, S4, S5, S6, S7,
-    T8, T9,
-    K0, K1,
+    V0,
+    V1,
+    A0,
+    A1,
+    A2,
+    A3,
+    T0,
+    T1,
+    T2,
+    T3,
+    T4,
+    T5,
+    T6,
+    T7,
+    S0,
+    S1,
+    S2,
+    S3,
+    S4,
+    S5,
+    S6,
+    S7,
+    T8,
+    T9,
+    K0,
+    K1,
     GP,
     SP,
     S8,
@@ -98,14 +118,16 @@ impl GpReg {
             GpReg::RA => "ra",
         }
     }
-
-    pub(crate) fn print(&self, w: &mut impl Write) -> fmt::Result {
-        write!(w, "{}", self.as_mnemonic())
-    }
 }
 
-impl fmt::Display for GpReg {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_mnemonic())
+impl Print for GpReg {
+    fn print(&self, opts: crate::PrintOpts, w: &mut impl Write) -> fmt::Result {
+        let r = if opts.reg_names {
+            self.as_mnemonic()
+        } else {
+            self.as_armips_id()
+        };
+
+        write!(w, "{}", r)
     }
 }

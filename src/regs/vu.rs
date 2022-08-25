@@ -1,5 +1,5 @@
-use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 use crate::utils;
+use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct VUReg(u8);

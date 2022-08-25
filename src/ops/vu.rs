@@ -1,9 +1,15 @@
-use num_enum::{TryFromPrimitive};
-use crate::{utils, regs::{su::GpReg, vu::{VUReg, VUCtrlReg}}};
+use crate::{
+    regs::{
+        su::GpReg,
+        vu::{VUCtrlReg, VUReg},
+    },
+    utils,
+};
+use num_enum::TryFromPrimitive;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u8)]
-enum VUOpcode {
+pub enum VUOpcode {
     VMULF = 0x00, // Vector (Frac) Multiply
     VMULU = 0x01, // Vector (Unsigned Frac) Multiply
     VRNDP = 0x02, // Vector DCT Round (+)
@@ -63,7 +69,7 @@ pub(crate) enum VUOp {
 impl VUOp {
     pub(crate) fn from_op(op: u32) -> Option<Self> {
         if op & 0x7FF != 0 {
-            return Self::decode_vector_op(op)
+            return Self::decode_vector_op(op);
         }
         let subop = utils::u8_at(21, 5, op);
         match subop {
@@ -78,30 +84,36 @@ impl VUOp {
     fn decode_vector_op(op: u32) -> Option<Self> {
         let opcode = VUOpcode::try_from(utils::u8_at(0, 5, op)).ok()?;
         if opcode == VUOpcode::VNOP {
-            return Some(Self::Nop)
+            return Some(Self::Nop);
         }
 
         let element = utils::u8_at(21, 4, op);
         let vt = VUReg::at_bit(16, op);
         let vd = VUReg::at_bit(6, op);
         let vs = match opcode {
-            VUOpcode::VRCP | 
-            VUOpcode::VRCPL |
-            VUOpcode::VMOV |
-            VUOpcode::VRSQ |
-            VUOpcode::VRSQL |
-            VUOpcode::VRSQH => RegEl::Element(utils::u8_at(11, 5, op)),
-            _ => RegEl::Reg(VUReg::at_bit(11, op))
+            VUOpcode::VRCP
+            | VUOpcode::VRCPL
+            | VUOpcode::VMOV
+            | VUOpcode::VRSQ
+            | VUOpcode::VRSQL
+            | VUOpcode::VRSQH => RegEl::Element(utils::u8_at(11, 5, op)),
+            _ => RegEl::Reg(VUReg::at_bit(11, op)),
         };
 
-        let info = VUCompute {op: opcode, vt, vd, vs, element};
-        
+        let info = VUCompute {
+            op: opcode,
+            vt,
+            vd,
+            vs,
+            element,
+        };
+
         Some(Self::Compute(info))
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct MoveVU {
+pub struct MoveVU {
     rt: GpReg,
     vd: VUReg,
     element: u8,
@@ -113,12 +125,12 @@ impl MoveVU {
         let vd = VUReg::at_bit(11, op);
         let element = utils::u8_at(7, 4, op);
 
-        Some(Self{rt, vd, element})
+        Some(Self { rt, vd, element })
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CtrlVU {
+pub struct CtrlVU {
     rt: GpReg,
     vs: VUCtrlReg,
 }
@@ -128,12 +140,12 @@ impl CtrlVU {
         let rt = GpReg::at_bit(16, 5).ok()?;
         let vs = VUCtrlReg::at_bit(11, op).ok()?;
 
-        Some(Self{rt, vs})
+        Some(Self { rt, vs })
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct VUCompute {
+pub struct VUCompute {
     op: VUOpcode,
     vt: VUReg,
     vs: RegEl, // element idx in scalar ops

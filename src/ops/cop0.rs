@@ -1,3 +1,4 @@
+use crate::print::Print;
 use crate::regs::{cop0::Cop0Reg, su::GpReg};
 use crate::utils;
 use std::fmt::{self, Write};
@@ -19,10 +20,12 @@ impl Cop0Op {
             _ => None,
         }
     }
+}
 
-    pub(crate) fn print(&self, w: &mut impl Write) -> fmt::Result {
+impl Print for Cop0Op {
+    fn print(&self, opts: crate::PrintOpts, w: &mut impl Write) -> fmt::Result {
         let (rt, rd) = match self {
-            Self::MFC0(rt,rd) => {
+            Self::MFC0(rt, rd) => {
                 write!(w, "mfc0 ")?;
                 (rt, rd)
             }
@@ -32,8 +35,8 @@ impl Cop0Op {
             }
         };
 
-        rt.print(w)?;
+        rt.print(opts, w)?;
         write!(w, ", ")?;
-        rd.print(w)
+        rd.print(opts, w)
     }
 }

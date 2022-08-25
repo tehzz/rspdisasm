@@ -1,38 +1,45 @@
-mod regs;
-mod utils;
 mod ops;
+mod print;
+mod regs;
 mod sym;
+mod utils;
 
-use std::fmt::{self, Write};
 use ops::RspOpcode;
+use std::fmt::{self, Write};
+
+use print::Print;
+pub use print::PrintOpts;
 
 #[derive(Debug, Clone)]
 pub enum RspDisasmError {
-    UnalignedInput(usize)
+    UnalignedInput(usize),
 }
 
 impl fmt::Display for RspDisasmError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnalignedInput(size) => write!(f, "data was not aligned to four-byte size (was {} byte{} sized)", size, if *size > 1 { "s" } else { "" })
+            Self::UnalignedInput(size) => write!(
+                f,
+                "data was not aligned to four-byte size (was {} byte{} sized)",
+                size,
+                if *size > 1 { "s" } else { "" }
+            ),
         }
     }
 }
 
-impl std::error::Error for RspDisasmError {
+impl std::error::Error for RspDisasmError {}
 
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct FmtOpts {
-    use_reg_names: bool
-}
-
-pub fn disassemble_bytes(data: &[u8], vaddr: u32, _opts: FmtOpts) -> Result<String, RspDisasmError> {
+pub fn disassemble_bytes(
+    data: &[u8],
+    vaddr: u32,
+    opts: PrintOpts,
+) -> Result<String, RspDisasmError> {
     if data.len() % 4 != 0 {
-        return Err(RspDisasmError::UnalignedInput(data.len()))
+        return Err(RspDisasmError::UnalignedInput(data.len()));
     }
-    let s = data.chunks_exact(4)
+    let s = data
+        .chunks_exact(4)
         .enumerate()
         .map(|(i, bytes)| {
             let word = u32::from_be_bytes(bytes.try_into().unwrap());
@@ -44,10 +51,10 @@ pub fn disassemble_bytes(data: &[u8], vaddr: u32, _opts: FmtOpts) -> Result<Stri
             String::with_capacity(data.len() * 32),
             |mut s, (pc, word, op)| {
                 write!(&mut s, "/* {:08X} {:08X} */\t", pc, word).unwrap();
-                op.print(&mut s).unwrap();
+                op.print(opts, &mut s).unwrap();
                 writeln!(&mut s).unwrap();
                 s
-            }
+            },
         );
 
     Ok(s)

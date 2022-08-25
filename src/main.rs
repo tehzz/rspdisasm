@@ -1,4 +1,7 @@
-use std::{path::PathBuf, io::{SeekFrom, Seek, Read}};
+use std::{
+    io::{Read, Seek, SeekFrom},
+    path::PathBuf,
+};
 
 use clap::Parser;
 
@@ -23,7 +26,7 @@ struct Args {
 }
 fn main() {
     let args = Args::parse();
-    let opts = rspdisasm::FmtOpts::default();
+    let opts = rspdisasm::PrintOpts::default();
     let mut f = std::fs::File::open(args.input).unwrap();
     f.seek(SeekFrom::Start(args.offset)).unwrap();
     let mut data = vec![0u8; args.size];
