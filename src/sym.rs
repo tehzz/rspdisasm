@@ -16,6 +16,12 @@ impl Sym {
         let target = (vaddr + 4) as i32 + ((imm as i32) * 4);
         Self::Static(target as u32)
     }
+    pub const fn value(&self) -> u32 {
+        match self {
+            Self::Global(v) => *v,
+            Self::Static(v) => *v,
+        }
+    }
 }
 
 impl Print for Sym {
@@ -24,5 +30,11 @@ impl Print for Sym {
             Self::Global(addr) => write!(w, "subr_{:08X}", addr),
             Self::Static(addr) => write!(w, "@L{:08X}", addr),
         }
+    }
+}
+
+impl fmt::Display for Sym {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.print(PrintOpts::default(), f)
     }
 }

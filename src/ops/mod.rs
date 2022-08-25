@@ -105,6 +105,16 @@ impl RspOpcode {
 
         return decoded.unwrap_or_else(|| Self::Unsupported(op));
     }
+
+    pub fn get_symbol(&self) -> Option<Sym> {
+        match self {
+            Self::J(s) | Self::JAL(s) => Some(*s),
+            Self::BNE(t) | Self::BEQ(t) => Some(t.target),
+            Self::BLEZ(t) | Self::BGTZ(t) => Some(t.target),
+            Self::RegImm(imm) => Some(imm.get_regs().sym),
+            _ => None,
+        }
+    }
 }
 
 impl Print for RspOpcode {

@@ -23,7 +23,7 @@ impl RegImm {
         })
     }
 
-    fn get_regs(&self) -> RsSym {
+    pub(crate) fn get_regs(&self) -> RsSym {
         match self {
             Self::BLTZ(r) => *r,
             Self::BGEZ(r) => *r,
@@ -47,9 +47,9 @@ impl Print for RegImm {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct RsSym {
+pub(crate) struct RsSym {
     rs: GpReg,
-    sym: Sym,
+    pub(crate) sym: Sym,
 }
 
 impl RsSym {

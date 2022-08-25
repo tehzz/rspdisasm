@@ -5,7 +5,10 @@ mod sym;
 mod utils;
 
 use ops::RspOpcode;
-use std::fmt::{self, Write};
+use std::{
+    collections::HashMap,
+    fmt::{self, Write},
+};
 
 use print::Print;
 pub use print::PrintOpts;
@@ -38,7 +41,9 @@ pub fn disassemble_bytes(
     if data.len() % 4 != 0 {
         return Err(RspDisasmError::UnalignedInput(data.len()));
     }
-    let s = data
+
+    let n_instr = data.len() / 4;
+    let (syms, ops) = data
         .chunks_exact(4)
         .enumerate()
         .map(|(i, bytes)| {
@@ -48,14 +53,24 @@ pub fn disassemble_bytes(
             (pc, word, op)
         })
         .fold(
-            String::with_capacity(data.len() * 32),
-            |mut s, (pc, word, op)| {
-                write!(&mut s, "/* {:08X} {:08X} */\t", pc, word).unwrap();
-                op.print(opts, &mut s).unwrap();
-                writeln!(&mut s).unwrap();
-                s
+            (HashMap::new(), Vec::with_capacity(n_instr)),
+            |(mut syms, mut arr), (pc, word, op)| {
+                let sym = op.get_symbol().map(|s| (s.value(), s));
+                syms.extend(sym);
+                arr.push((pc, word, op));
+                (syms, arr)
             },
         );
+
+    let mut s = String::with_capacity(n_instr * 32);
+    for (pc, word, op) in ops {
+        if let Some(sym) = syms.get(&pc) {
+            writeln!(&mut s, "{}:", sym).unwrap();
+        }
+        write!(&mut s, "/* {:08X} {:08X} */\t", pc, word).unwrap();
+        op.print(opts, &mut s).unwrap();
+        writeln!(&mut s).unwrap();
+    }
 
     Ok(s)
 }
