@@ -194,7 +194,7 @@ impl Print for RspOpcode {
                 d.print(opts, w)
             }
             Self::COP0(sub) => sub.print(opts, w),
-            Self::COP2(sub) => write!(w, "cop2 todo {:?}", sub),
+            Self::COP2(sub) => sub.print(opts, w),
             Self::LB(d) => {
                 // lb {rt, offset(base)
                 write!(w, "lb ")?;
@@ -240,8 +240,14 @@ impl Print for RspOpcode {
                 write!(w, "sw ")?;
                 d.print(opts, w)
             }
-            Self::LWC2(_) => write!(w, "todo lwc2"),
-            Self::SWC2(_) => write!(w, "todo swc2"),
+            Self::LWC2(cmd) => {
+                write!(w, "l")?;
+                cmd.print(opts, w)
+            }
+            Self::SWC2(cmd) => {
+                write!(w, "s")?;
+                cmd.print(opts, w)
+            }
             Self::Unsupported(b) => write!(w, "; unrecognized op [{:08X}]", b),
         }
     }
@@ -327,7 +333,7 @@ impl Print for TwoRegImm {
         write!(w, ", ")?;
         self.rs.print(opts, w)?;
         if self.as_hex {
-            write!(w, ", {:#X}", self.imm)
+            write!(w, ", {:#06X}", self.imm)
         } else {
             write!(w, ", {}", self.imm)
         }
@@ -410,6 +416,24 @@ impl Cop2LoadStore {
     }
 }
 
+impl Print for Cop2LoadStore {
+    fn print(&self, opts: PrintOpts, w: &mut impl Write) -> fmt::Result {
+        // load or store letter (l || s) is printed before this
+        // this prints the rest of the command
+        let offset = crate::utils::Offset(self.offset);
+        write!(
+            w,
+            "{}v {}[{}], {}(",
+            self.opcode.mnemonic(),
+            self.vt,
+            self.element,
+            offset
+        )?;
+        self.base.print(opts, w)?;
+        write!(w, ")")
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u8)]
 enum RspAddressMode {
@@ -445,6 +469,23 @@ impl RspAddressMode {
             Self::FourthPack => 16,
             Self::Wrap => 16,
             Self::Transpose => 16,
+        }
+    }
+
+    const fn mnemonic(&self) -> &'static str {
+        match self {
+            Self::Byte => "b",
+            Self::Short => "s",
+            Self::Word => "w",
+            Self::Double => "d",
+            Self::Quad => "q",
+            Self::Rest => "r",
+            Self::Pack => "p",
+            Self::UPack => "u",
+            Self::HalfPack => "h",
+            Self::FourthPack => "f",
+            Self::Wrap => "w",
+            Self::Transpose => "t",
         }
     }
 }

@@ -22,6 +22,12 @@ impl Sym {
             Self::Static(v) => *v,
         }
     }
+    pub const fn is_global(&self) -> bool {
+        match self {
+            Self::Global(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Print for Sym {

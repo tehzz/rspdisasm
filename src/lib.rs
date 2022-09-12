@@ -46,16 +46,13 @@ pub fn disassemble_bytes(
     let (syms, ops) = data
         .chunks_exact(4)
         .enumerate()
-        .map(|(i, bytes)| {
-            let word = u32::from_be_bytes(bytes.try_into().unwrap());
-            let pc = vaddr + i as u32 * 4;
-            let op = RspOpcode::decode(word, pc);
-            (pc, word, op)
-        })
+        .map(|(i, bytes)| (vaddr + i as u32 * 4, bytes))
+        .map(parse_op)
         .fold(
             (HashMap::new(), Vec::with_capacity(n_instr)),
             |(mut syms, mut arr), (pc, word, op)| {
                 let sym = op.get_symbol().map(|s| (s.value(), s));
+                // todo: combine syms to preserve global
                 syms.extend(sym);
                 arr.push((pc, word, op));
                 (syms, arr)
@@ -65,6 +62,9 @@ pub fn disassemble_bytes(
     let mut s = String::with_capacity(n_instr * 32);
     for (pc, word, op) in ops {
         if let Some(sym) = syms.get(&pc) {
+            if sym.is_global() {
+                writeln!(&mut s).unwrap();
+            }
             writeln!(&mut s, "{}:", sym).unwrap();
         }
         write!(&mut s, "/* {:08X} {:08X} */\t", pc, word).unwrap();
@@ -73,4 +73,10 @@ pub fn disassemble_bytes(
     }
 
     Ok(s)
+}
+
+fn parse_op((pc, bytes): (u32, &[u8])) -> (u32, u32, RspOpcode) {
+    let word = u32::from_be_bytes(bytes.try_into().unwrap());
+    let op = RspOpcode::decode(word, pc);
+    (pc, word, op)
 }
